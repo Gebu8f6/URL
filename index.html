@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>智能路径重定向</title>
+    <title>智慧路徑重定向</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -19,182 +19,45 @@
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             text-align: center;
-            width: 300px;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            box-sizing: border-box;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
         }
         #status {
             margin-top: 20px;
             color: #666;
         }
-        #password-section {
-            display: none;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>智能路径重定向</h2>
-        <div id="password-section">
-            <input type="password" id="password-input" placeholder="请输入密码">
-            <button onclick="verifyPassword()">验证</button>
-        </div>
-        <p id="status">正在处理重定向...</p>
+        <h2>智慧路徑重定向</h2>
+        <p id="status">正在處理重定向...</p>
     </div>
 
     <script>
-        // 密码配置直接嵌入HTML
-        const passwordConfig = `example123:https://example.com:test
-:https://example2.com:/page
-:https://google.com:/search`;
-
-        let redirectMap = {};
-
-        // 检测并阻止开发者工具
-        function detectDevTools() {
-            const threshold = 160;
-            let count = 0;
-            
-            const checkDevTools = () => {
-                const widthDiff = window.outerWidth - window.innerWidth;
-                const heightDiff = window.outerHeight - window.innerHeight;
-
-                // 检测开发者工具是否打开
-                if (widthDiff > threshold || heightDiff > threshold) {
-                    count++;
-                    if (count >= 3) {
-                        // 关闭开发者工具并刷新页面
-                        window.close();
-                        window.location.reload();
-                        return false;
-                    }
-                }
-                
-                return true;
-            };
-
-            // 定期检查
-            const intervalId = setInterval(checkDevTools, 500);
-
-            // 检测快捷键
-            document.addEventListener('keydown', (e) => {
-                // 常见的开发者工具快捷键
-                if (
-                    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) || // Ctrl+Shift+I
-                    (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) || // Ctrl+Shift+J
-                    (e.ctrlKey && (e.key === 'U' || e.key === 'u')) || // Ctrl+U
-                    (e.key === 'F12') // F12
-                ) {
-                    e.preventDefault();
-                    window.close();
-                    window.location.reload();
-                }
-            });
-
-            // 重写console方法
-            ['log', 'warn', 'error', 'info', 'debug'].forEach(method => {
-                console[method] = () => {};
-            });
-        }
-
-        // 加载密码配置
-        function loadPasswordConfig() {
-            passwordConfig.split('\n').forEach(line => {
-                if (line.trim()) {
-                    const parts = line.split(':');
-                    const password = parts[0];
-                    const url = parts[1];
-                    const pathCheck = parts[2] || ''; // 可选的路径检测
-                    const path = url.split('/').pop(); // 获取最后一部分作为路径
-
-                    redirectMap[path] = { 
-                        url: url.trim(), 
-                        password: password.trim(),
-                        pathCheck: pathCheck.trim()
-                    };
-                }
-            });
-        }
+        // 预定义的重定向映射
+        const redirectMap = {
+            'index.html': 'https://www.gebu8f.eu.org',
+            'example2': 'https://example2.com'
+            // 在这里可以继续添加更多映射
+        };
 
         async function checkAndRedirect() {
-            // 启动开发者工具检测
-            detectDevTools();
-
             const statusElement = document.getElementById('status');
-            const passwordSection = document.getElementById('password-section');
-            
-            // 加载配置
-            loadPasswordConfig();
             
             // 获取当前路径的最后一部分
             const path = window.location.pathname.split('/').filter(p => p !== '')[0];
 
             if (!path) {
-                statusElement.textContent = '错误：未提供有效路径';
+                statusElement.textContent = '錯誤：未提供有效路徑';
                 return;
             }
 
-            const targetConfig = redirectMap[path];
+            const targetUrl = redirectMap[path];
 
-            if (!targetConfig) {
-                statusElement.textContent = `错误：未找到 "/${path}" 的重定向规则`;
+            if (!targetUrl) {
+                statusElement.textContent = `錯誤：未找到 "/${path}" 的重定向規則`;
                 return;
             }
 
-            const targetUrl = targetConfig.url;
-            const requiredPassword = targetConfig.password;
-            const pathCheck = targetConfig.pathCheck;
-
-            // 检查特定路径是否匹配
-            if (pathCheck && !window.location.pathname.includes(pathCheck)) {
-                statusElement.textContent = `错误：无效的路径检测`;
-                return;
-            }
-
-            // 如果需要密码，显示密码输入框
-            if (requiredPassword) {
-                passwordSection.style.display = 'block';
-                statusElement.textContent = '此链接需要密码验证';
-                
-                // 保存全局变量，供验证函数使用
-                window.currentTargetUrl = targetUrl;
-                window.currentPassword = requiredPassword;
-                return;
-            }
-
-            // 不需要密码，直接跳转
-            await redirectToUrl(targetUrl, statusElement);
-        }
-
-        async function verifyPassword() {
-            const passwordInput = document.getElementById('password-input');
-            const statusElement = document.getElementById('status');
-            const passwordSection = document.getElementById('password-section');
-
-            // 验证密码
-            if (passwordInput.value === window.currentPassword) {
-                passwordSection.style.display = 'none';
-                await redirectToUrl(window.currentTargetUrl, statusElement);
-            } else {
-                statusElement.textContent = '密码错误，请重试';
-                passwordInput.value = '';
-            }
-        }
-
-        async function redirectToUrl(targetUrl, statusElement) {
             try {
                 // 检查链接是否可用
                 const response = await fetch(targetUrl, { 
@@ -204,30 +67,30 @@
 
                 // 检查响应状态
                 if (response.ok || response.type === 'opaque') {
-                    statusElement.textContent = '链接有效，正在跳转...';
+                    statusElement.textContent = '連結有效，正在跳轉...';
                     setTimeout(() => {
                         window.location.href = targetUrl;
                     }, 1500);
                 } else {
-                    statusElement.textContent = '错误：目标链接不可用';
+                    statusElement.textContent = '錯誤：目標連結不可用';
                 }
             } catch (error) {
                 // 对于一些无法使用HEAD方法的网站，直接尝试跳转
                 try {
-                    statusElement.textContent = '正在验证链接...';
+                    statusElement.textContent = '正在驗證連結...';
                     const testImg = new Image();
                     testImg.onload = () => {
-                        statusElement.textContent = '链接有效，正在跳转...';
+                        statusElement.textContent = '連結有效，正在跳轉...';
                         setTimeout(() => {
                             window.location.href = targetUrl;
                         }, 1500);
                     };
                     testImg.onerror = () => {
-                        statusElement.textContent = '错误：目标链接不可用';
+                        statusElement.textContent = '錯誤：目標連結不可用';
                     };
                     testImg.src = targetUrl;
                 } catch {
-                    statusElement.textContent = '错误：无法验证链接';
+                    statusElement.textContent = '錯誤：無法驗證鏈接';
                 }
             }
         }
